@@ -6,6 +6,8 @@ import bodyParser from "body-parser"
 import dotenv from "dotenv"
 import { Server } from 'socket.io';
 import { createServer } from 'node:http';
+import connectDB from "./db"
+import { router as RoomRoutes } from "./routes/room.routes.js"
 
 dotenv.config()
 const app=express()
@@ -30,8 +32,15 @@ app.use(cors({
 }))
 app.use(express.static("public"))
 
+app.use("/room",RoomRoutes)
+
 const port=process.env.PORT
-server.listen(port,()=>console.log(`Server running on port ${port}`))
+
+connectDB()
+.then(()=>{
+    server.listen(port,()=>console.log(`Server running on port ${port}`))
+})
+.catch((error)=>console.error(`${error} Failed start server`))
 
 io.on("connection",(socket)=>{
     console.log(`Socket ${socket.id} connected`)
