@@ -1,29 +1,44 @@
-import express from 'express';
-import { createServer } from 'node:http';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import express from "express"
+import helmet from "helmet"
+import morgan from "morgan"
+import cors from "cors"
+import bodyParser from "body-parser"
+import dotenv from "dotenv"
 import { Server } from 'socket.io';
+import { createServer } from 'node:http';
 
-const app = express();
+dotenv.config()
+const app=express()
 const server = createServer(app);
-const io = new Server(server);
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-app.get('/', (req, res) => {
-    res.sendFile(join(__dirname, 'index.html'));
+const io = new Server(server, {
+    cors: {
+        origin: process.env.CORS_ORIGIN,
+        methods: ["GET", "POST"]
+    }
 });
+app.use(express.json())
+app.use(helmet())
+app.use(helmet.crossOriginResourcePolicy({policy:"cross-origin"}))
+app.use(morgan("common"))
+app.use(bodyParser.json({limit:"30mb"}))
+app.use(bodyParser.urlencoded({limit:"30mb",extended:true}))
+app.use(cors({
+    origin:process.env.CORS_ORIGIN,
+    methods:["GET","POST","PUT","DELETE"],
+    allowedHeaders:["Content-Type","Authorization"],
+    credentials:true
+}))
+app.use(express.static("public"))
 
-io.on('connection', (socket) => {
-    console.log('a user connected');
-    socket.on('disconnect', () => {
-        console.log('user disconnected');
-    });
-    socket.on('chat message', (msg) => {
-        io.emit('chat message', msg);
-    });
-});
+const port=process.env.PORT
+server.listen(port,()=>console.log(`Server running on port ${port}`))
 
-server.listen(3000, () => {
-  console.log('server running at http://localhost:3000');
-});
+io.on("connection",(socket)=>{
+    console.log(`Socket ${socket.id} connected`)
+    socket.on('sendMessage',(message)=>{
+        io.emit("message",message)
+    })
+    socket.on("disconnect",()=>{
+        console.log(`Scoket ${socket.id} disconnected`)
+    })
+})
