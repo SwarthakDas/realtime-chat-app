@@ -8,6 +8,7 @@ import { Server } from 'socket.io';
 import { createServer } from 'node:http';
 import connectDB from "./db"
 import { router as RoomRoutes } from "./routes/room.routes.js"
+import { router as UserRoutes } from "./routes/user.routes.js"
 
 dotenv.config()
 const app=express()
@@ -33,6 +34,7 @@ app.use(cors({
 app.use(express.static("public"))
 
 app.use("/room",RoomRoutes)
+app.use("/user",UserRoutes)
 
 const port=process.env.PORT
 
