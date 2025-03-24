@@ -22,38 +22,6 @@ export const checkRoom=async(req,res)=>{
     }
 }
 
-export const addUser=async(res,req)=>{
-    try {
-        const {id,username}=req.body
-        const room=await Room.findOne({id:id})
-        const userExists = room.users.some(user => user.username === username);
-        if (userExists) {
-            return res.status(400).json({ error: "User already exists in the room" });
-        }
-        room.users.push({username,messages:[]})
-        await room.save()
-        return res.status(200).json({ message: "User added successfully", room });
-    } catch (error) {
-        res.status(500).json({error:error.message})
-    }
-}
-
-export const removeUser=async(res,req)=>{
-    try {
-        const {id,username}=req.body
-        const room=await Room.findOne({id:id})
-        const userExists = room.users.some(user => user.username === username);
-        if (!userExists) {
-            return res.status(400).json({ error: "User doesnot exist in the room" });
-        }
-        room.users=room.users.filter((user)=>user.username!==username)
-        await room.save()
-        return res.status(200).json({ message: "User removed successfully", room });
-    } catch (error) {
-        res.status(500).json({error:error.message})
-    }
-}
-
 export const fetchMessages = async (req, res) => {
     try {
         const {id} = req.body;
@@ -89,3 +57,27 @@ export const fetchRooms=async(res)=>{
         return res.status(500).json({ error: error.message });
     }
 }
+
+export const sendMessage = async (req, res) => {
+    try {
+        const { id, username, message } = req.body;
+
+        const room = await Room.findOne({ id: id });
+        if (!room) {
+            return res.status(404).json({ error: "Room not found" });
+        }
+
+        const user = room.users.find(user => user.username === username);
+        if (!user) {
+            user = { username, messages: [] };
+            room.users.push(user);
+        }
+
+        user.messages.push({ message, createdAt: new Date() });
+        await room.save();
+
+        return res.status(200).json({ message: "Message sent successfully", room });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};
